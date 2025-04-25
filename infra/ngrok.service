@@ -1,0 +1,12 @@
+[Unit]
+Description=ngrok Tunnel for SavageGPT
+After=savagegpt.service
+
+[Service]
+User=deployer
+ExecStart=/usr/local/bin/ngrok http --authtoken your_ngrok_token --name savagegpt 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
