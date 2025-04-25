@@ -4,9 +4,11 @@ After=savagegpt.service
 
 [Service]
 User=deployer
-ExecStart=/usr/local/bin/ngrok http --authtoken your_ngrok_token --name savagegpt 8000
+WorkingDirectory=/opt/savagegpt
+EnvironmentFile=/etc/savagegpt.env
+ExecStart=/usr/local/bin/ngrok http --authtoken ${NGROK_AUTH_TOKEN} --name savagegpt 8000
 Restart=always
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=multi-user-target

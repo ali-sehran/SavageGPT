@@ -16,28 +16,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Write secret env file
+        run: |
+          sudo tee /etc/savagegpt.env >/dev/null <<EOF
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          NGROK_AUTH_TOKEN=${{ secrets.NGROK_AUTH_TOKEN }}
+          EOF
+
       - name: Copy systemd unit files
         run: |
-          # Copy your infra/*.service into systemd
-          sudo cp infra/savagegpt.service    /etc/systemd/system/savagegpt.service
-          sudo cp infra/ngrok.service        /etc/systemd/system/ngrok.service
+          sudo cp infra/savagegpt.service /etc/systemd/system/savagegpt.service
+          sudo cp infra/ngrok.service   /etc/systemd/system/ngrok.service
 
       - name: Reload & enable services
         run: |
-          # Reload systemd to pick up new unit files
           sudo systemctl daemon-reload
-
-          # Enable on-boot and restart to pick up any changes
           sudo systemctl enable savagegpt.service
           sudo systemctl enable ngrok.service
 
       - name: Deploy new code and restart services
         run: |
-          # Pull latest code
           cd /opt/savagegpt
           git fetch --tags
           git checkout ${{ github.ref_name }}
-
-          # Restart the FastAPI & ngrok services
           sudo systemctl restart savagegpt.service
           sudo systemctl restart ngrok.service
