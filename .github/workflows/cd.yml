@@ -16,6 +16,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Deploy code to /opt/savagegpt
+        run: |
+          sudo rm -rf /opt/savagegpt
+          sudo mkdir -p /opt/savagegpt
+          sudo cp -r $GITHUB_WORKSPACE/* /opt/savagegpt
+          sudo chown -R $(whoami):$(whoami) /opt/savagegpt
+
       - name: Write secret env file
         run: |
           sudo tee /etc/savagegpt.env >/dev/null <<EOF
@@ -34,10 +41,7 @@ jobs:
           sudo systemctl enable savagegpt.service
           sudo systemctl enable ngrok.service
 
-      - name: Deploy new code and restart services
+      - name: Restart services
         run: |
-          cd /opt/savagegpt
-          git fetch --tags
-          git checkout ${{ github.ref_name }}
           sudo systemctl restart savagegpt.service
           sudo systemctl restart ngrok.service
