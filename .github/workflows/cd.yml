@@ -1,3 +1,4 @@
+# .github/workflows/cd.yml
 name: CD
 
 on:
@@ -45,3 +46,28 @@ jobs:
         run: |
           sudo systemctl restart savagegpt.service
           sudo systemctl restart ngrok.service
+
+      - name: Show ngrok URL
+        run: |
+          # give ngrok a moment to start
+          sleep 5
+
+          # fetch tunnels JSON and extract the public URL
+          NGROK_URL=$(
+            curl -s http://127.0.0.1:4040/api/tunnels \
+            | python3 - <<'PYCODE'
+            import sys, json
+            data = json.load(sys.stdin)
+            # look for a tunnel named "savagegpt"
+            for t in data.get("tunnels", []):
+                if t.get("name") == "savagegpt":
+                    print(t.get("public_url"))
+                    sys.exit(0)
+            # fallback to first tunnel
+            if data.get("tunnels"):
+                print(data["tunnels"][0].get("public_url"))
+            PYCODE
+                      )
+
+                      echo "::notice title=ngrok_url::$NGROK_URL"
+                      echo "🚀 SavageGPT is live at: $NGROK_URL"
