@@ -49,36 +49,43 @@ jobs:
       
       - name: Install and run ngrok
         run: |
-            # Check if ngrok is installed, if not install it
-            if ! command -v ngrok &> /dev/null; then
-              echo "Installing ngrok..."
-              curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
-                sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && \
-                echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
-                sudo tee /etc/apt/sources.list.d/ngrok.list && \
-                sudo apt update && sudo apt install ngrok
-            fi
+          # Install jq if not present
+          if ! command -v jq &> /dev/null; then
+            echo "Installing jq..."
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
+          
+          # Check if ngrok is installed, if not install it
+          if ! command -v ngrok &> /dev/null; then
+            echo "Installing ngrok..."
+            curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
+              sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && \
+              echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
+              sudo tee /etc/apt/sources.list.d/ngrok.list && \
+              sudo apt update && sudo apt install ngrok
+          fi
 
-            # Configure ngrok with auth token if provided
-            if [ ! -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]; then
-              ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
-            fi
+          # Configure ngrok with auth token if provided
+          if [ ! -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]; then
+            ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+          fi
 
-            # Start a new ngrok tunnel with a unique name
-            TUNNEL_NAME="savagegpt-$(date +%s)"
-            nohup ngrok http --name=$TUNNEL_NAME 8000 --log=stdout > ngrok-$TUNNEL_NAME.log 2>&1 &
+          # Start a new ngrok tunnel with a unique name
+          TUNNEL_NAME="savagegpt-$(date +%s)"
+          nohup ngrok http --name=$TUNNEL_NAME 8000 --log=stdout > ngrok-$TUNNEL_NAME.log 2>&1 &
 
-            # Wait for ngrok to start
-            sleep 5
+          # Wait for ngrok to start
+          sleep 5
 
-            # Extract and output the ngrok URL
-            NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.name=="'$TUNNEL_NAME'") | .public_url')
-            if [ -z "$NGROK_URL" ]; then
-              # Try the alternate API endpoint format
-              NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | grep -o 'http[^"]*' | tail -1)
-            fi
+          # Extract and output the ngrok URL - first try with jq, fallback to grep
+          NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.name=="'$TUNNEL_NAME'") | .public_url' 2>/dev/null)
+          if [ -z "$NGROK_URL" ]; then
+            # Try the alternate API endpoint format using grep as fallback
+            NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | grep -o 'http[^"]*' | tail -1)
+          fi
 
-            echo "::notice title=ngrok_url::$NGROK_URL"
-            echo "===================================="
-            echo "🚀 SavageGPT is now running at: $NGROK_URL"
-            echo "===================================="
+          echo "::notice title=ngrok_url::$NGROK_URL"
+          echo "===================================="
+          echo "🚀 SavageGPT is now running at: $NGROK_URL"
+          echo "===================================="
