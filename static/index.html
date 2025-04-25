@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
+  <link rel="manifest" href="/static/img/site.webmanifest">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SavageGPT</title>
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+  <!-- Age verification modal -->
+  <div class="modal" id="ageModal">
+    <div class="modal-content">
+      <h2>Age Verification</h2>
+      <p>This chatbot contains mature content with savage roasts and explicit language. You must be 18+ to continue.</p>
+      <p>Are you 18 years or older?</p>
+      <button class="yes-btn" id="yesBtn">Yes, I am 18+</button>
+      <button class="no-btn" id="noBtn">No, I'm under 18</button>
+    </div>
+  </div>
+  
+  <div class="app-container">
+    <div class="header">
+      <img src="/static/img/4abe7f4b-3e4e-4a18-ab67-358f1f7ed885.png" alt="Savage Bot">
+      <div class="header-info">
+        <h2>SavageGPT</h2>
+        <div class="status">
+          <div class="status-circle"></div><p>online - ready to destroy your ego</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-container" id="chatContainer">
+      <!-- Messages will appear here -->
+    </div>
+    
+    <div class="typing-indicator" id="typingIndicator">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    
+    <div class="input-area" id="inputArea">
+      <input type="text" id="messageInput" placeholder="Type a message...">
+      <button id="sendBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 2L11 13M22 2L15 22L11 13L2 9L22 2Z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  
+  <script src="static/js/script.js"></script>
+</body>
+</html>

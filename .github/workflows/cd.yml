@@ -1,0 +1,84 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - 'v*'
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: github.repository_owner == 'ali-sehran' && github.actor == 'ali-sehran'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install fastapi uvicorn groq pydantic python-multipart
+          
+          # Install any additional dependencies your app needs
+          # If you have a requirements.txt file:
+          # pip install -r requirements.txt
+      
+      - name: Stop previous app instance
+        run: |
+          pkill -f "uvicorn app:app" || true
+          sleep 2
+      
+      - name: Start FastAPI app
+        run: |
+          # Export the environment variable
+          export GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          
+          # Start the app in the background
+          nohup uvicorn app:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
+          
+          # Wait for the app to start
+          sleep 5
+          echo "FastAPI app started on port 8000"
+      
+      - name: Install and run ngrok
+        run: |
+            # Check if ngrok is installed, if not install it
+            if ! command -v ngrok &> /dev/null; then
+              echo "Installing ngrok..."
+              curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | \
+                sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null && \
+                echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | \
+                sudo tee /etc/apt/sources.list.d/ngrok.list && \
+                sudo apt update && sudo apt install ngrok
+            fi
+
+            # Configure ngrok with auth token if provided
+            if [ ! -z "${{ secrets.NGROK_AUTH_TOKEN }}" ]; then
+              ngrok config add-authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+            fi
+
+            # Start a new ngrok tunnel with a unique name
+            TUNNEL_NAME="savagegpt-$(date +%s)"
+            nohup ngrok http --name=$TUNNEL_NAME 8000 --log=stdout > ngrok-$TUNNEL_NAME.log 2>&1 &
+
+            # Wait for ngrok to start
+            sleep 5
+
+            # Extract and output the ngrok URL
+            NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[] | select(.name=="'$TUNNEL_NAME'") | .public_url')
+            if [ -z "$NGROK_URL" ]; then
+              # Try the alternate API endpoint format
+              NGROK_URL=$(curl -s http://localhost:4040/api/tunnels | grep -o '"public_url":"[^"]*' | grep -o 'http[^"]*' | tail -1)
+            fi
+
+            echo "::notice title=ngrok_url::$NGROK_URL"
+            echo "===================================="
+            echo "🚀 SavageGPT is now running at: $NGROK_URL"
+            echo "===================================="
