@@ -62,6 +62,7 @@ jobs:
           WorkingDirectory=/opt/savagegpt
           EnvironmentFile=/etc/savagegpt.env
           # use bash -lc so $NGROK_AUTH_TOKEN is expanded
+          ExecStartPre=/usr/local/bin/ngrok tunnels kill --all
           ExecStart=/usr/bin/env bash -lc '/usr/local/bin/ngrok http 8000 \
             --authtoken $NGROK_AUTH_TOKEN \
             --name savagegpt \
