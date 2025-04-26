@@ -24,6 +24,23 @@ jobs:
           sudo cp -r $GITHUB_WORKSPACE/* /opt/savagegpt
           sudo chown -R $(whoami):$(whoami) /opt/savagegpt
 
+      - name: Force terminate existing ngrok sessions
+        run: |
+          # First try to gracefully kill tunnels
+          /usr/local/bin/ngrok tunnels kill || true
+          
+          # Check if we need to manually terminate sessions from API
+          if command -v curl &> /dev/null; then
+            # This requires an API key with appropriate permissions
+            echo "Attempting to terminate remote sessions via API..."
+            curl -s -X DELETE "https://api.ngrok.com/tunnel_sessions" \
+              -H "Authorization: Bearer ${{ secrets.NGROK_AUTH_TOKEN }}" \
+              -H "Ngrok-Version: 2" || true
+          fi
+          
+          # Give ngrok a moment to release resources
+          sleep 5
+
       - name: Write secret env file
         run: |
           sudo tee /etc/savagegpt.env >/dev/null <<EOF
@@ -61,14 +78,16 @@ jobs:
           User=asehran
           WorkingDirectory=/opt/savagegpt
           EnvironmentFile=/etc/savagegpt.env
-          # use bash -lc so $NGROK_AUTH_TOKEN is expanded
-          ExecStartPre=/usr/local/bin/ngrok tunnels kill
+          # Make sure we kill any existing tunnels before starting
+          ExecStartPre=/bin/bash -c '/usr/local/bin/ngrok tunnels kill || true'
+          # Add a small delay to ensure resources are released
+          ExecStartPre=/bin/sleep 3
           ExecStart=/usr/bin/env bash -lc '/usr/local/bin/ngrok http 8000 \
             --authtoken $NGROK_AUTH_TOKEN \
             --name savagegpt \
             --log=stdout'
-          Restart=always
-          RestartSec=5
+          Restart=on-failure
+          RestartSec=10
 
           [Install]
           WantedBy=multi-user.target
