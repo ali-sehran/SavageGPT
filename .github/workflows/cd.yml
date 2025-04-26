@@ -86,9 +86,23 @@ jobs:
 
       - name: Show ngrok URL from logs
         run: |
-          echo "Fetching ngrok tunnel URL from journal..."
-          # Give ngrok a moment to log its forwarding URL
+          echo "Fetching ngrok URL from recent journal entries..."
+          # give ngrok a moment to log its startup line
           sleep 5
-          NGROK_URL=$(sudo journalctl -u ngrok.service -n 50 | grep -oP 'Forwarding\s+\Khttps?://\S+')
-          echo "::notice title=ngrok_url::$NGROK_URL"
-          echo "🚀 SavageGPT is live at: $NGROK_URL"
+
+          # Grab last 20 lines of the journal for ngrok.service
+          LOG=$(sudo journalctl -u ngrok.service -n 20 --no-pager)
+
+          # Extract the first URL after 'url=' in any "started tunnel" line
+          NGROK_URL=$(echo "$LOG" \
+            | grep -oP 'started tunnel.*url=\Khttps?://\S+' \
+            | head -1 \
+          )
+
+          if [ -n "$NGROK_URL" ]; then
+            echo "::notice title=ngrok_url::$NGROK_URL"
+            echo "🚀 SavageGPT is live at: $NGROK_URL"
+          else
+            echo "⚠️  Could not find ngrok URL in the last 20 journal lines."
+            echo "$LOG"
+          fi
