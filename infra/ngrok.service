@@ -6,7 +6,11 @@ After=savagegpt.service
 User=deployer
 WorkingDirectory=/opt/savagegpt
 EnvironmentFile=/etc/savagegpt.env
-ExecStart=/usr/local/bin/ngrok http --authtoken ${NGROK_AUTH_TOKEN} --name savagegpt 8000
+ExecStart=/usr/local/bin/ngrok http 8000 \
+  --authtoken ${NGROK_AUTH_TOKEN} \
+  --name savagegpt \
+  --log=stdout \
+  --web-addr=127.0.0.1:4040
 Restart=always
 RestartSec=5
 
