@@ -84,31 +84,11 @@ jobs:
           sudo systemctl restart savagegpt.service
           sudo systemctl restart ngrok.service
 
-      - name: Wait for ngrok API
+      - name: Show ngrok URL from logs
         run: |
-          echo "Waiting for ngrok HTTP API on port 4040..."
-          for i in {1..10}; do
-            if curl -s http://127.0.0.1:4040/api/tunnels >/dev/null; then
-              echo "ngrok API is up!"
-              break
-            fi
-            echo "  (retry $i)…"
-            sleep 3
-          done
-
-      - name: Show ngrok URL
-        run: |
-          NGROK_URL=$(curl -s http://127.0.0.1:4040/api/tunnels | \
-            python3 - <<'PYCODE'
-            import sys, json
-            data = json.load(sys.stdin)
-            for t in data.get("tunnels", []):
-                if t.get("name") == "savagegpt":
-                    print(t["public_url"])
-                    sys.exit(0)
-            if data.get("tunnels"):
-                print(data["tunnels"][0]["public_url"])
-            PYCODE
-                      )
-                      echo "::notice title=ngrok_url::$NGROK_URL"
-                      echo "🚀 SavageGPT is live at: $NGROK_URL"
+          echo "Fetching ngrok tunnel URL from journal..."
+          # Give ngrok a moment to log its forwarding URL
+          sleep 5
+          NGROK_URL=$(sudo journalctl -u ngrok.service -n 50 | grep -oP 'Forwarding\s+\Khttps?://\S+')
+          echo "::notice title=ngrok_url::$NGROK_URL"
+          echo "🚀 SavageGPT is live at: $NGROK_URL"
