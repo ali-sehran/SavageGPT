@@ -9,8 +9,7 @@ EnvironmentFile=/etc/savagegpt.env
 ExecStart=/usr/local/bin/ngrok http 8000 \
   --authtoken ${NGROK_AUTH_TOKEN} \
   --name savagegpt \
-  --log=stdout \
-  --web-addr=127.0.0.1:4040
+  --log=stdout
 Restart=always
 RestartSec=5
 
