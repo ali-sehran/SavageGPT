@@ -61,11 +61,11 @@ jobs:
           User=asehran
           WorkingDirectory=/opt/savagegpt
           EnvironmentFile=/etc/savagegpt.env
-          ExecStart=/usr/local/bin/ngrok http 8000 \
+          # use bash -lc so $NGROK_AUTH_TOKEN is expanded
+          ExecStart=/usr/bin/env bash -lc '/usr/local/bin/ngrok http 8000 \
             --authtoken $NGROK_AUTH_TOKEN \
             --name savagegpt \
-            --log=stdout \
-            --web-addr=127.0.0.1:4040
+            --log=stdout'
           Restart=always
           RestartSec=5
 
