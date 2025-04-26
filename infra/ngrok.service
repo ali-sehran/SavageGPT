@@ -3,7 +3,7 @@ Description=ngrok Tunnel for SavageGPT
 After=savagegpt.service
 
 [Service]
-User=deployer
+User=asehran
 WorkingDirectory=/opt/savagegpt
 EnvironmentFile=/etc/savagegpt.env
 ExecStart=/usr/local/bin/ngrok http 8000 \
